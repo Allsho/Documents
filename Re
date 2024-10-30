@@ -1,4 +1,31 @@
-[Execute SQL Task] Error: The value type (__ComObject) can only be converted to variables of type Object.
+using System.Net;
+using System.Net.Mail;
+using Microsoft.SqlServer.Dts.Runtime;
 
-[Execute SQL Task] Error: An error occurred while assigning a value to variable "EmailBody": "The type of the value (DBNull) being assigned to variable "User::EmailBody" differs from the current variable type (String). Variables may not change type during execution. Variable types are strict, except for variables of type Object.
-".
+public void Main()
+{
+    // Retrieve the SMTP connection details
+    ConnectionManager smtpConnection = Dts.Connections["CM_SMTP_EXHUB"];
+    string smtpServer = smtpConnection.Properties["ServerName"].GetValue(smtpConnection).ToString();
+
+    // Define email properties from SSIS variables
+    string fromAddress = "your_email@yourdomain.com";  // Replace with the actual from address
+    string toAddress = Dts.Variables["User::EmailRecipient"].Value.ToString();
+    string subject = Dts.Variables["User::EmailSubject"].Value.ToString();
+    string body = Dts.Variables["User::EmailBody"].Value.ToString();
+
+    // Create a new mail message and set IsBodyHtml to true
+    MailMessage mail = new MailMessage();
+    mail.From = new MailAddress(fromAddress);
+    mail.To.Add(toAddress);
+    mail.Subject = subject;
+    mail.Body = body;
+    mail.IsBodyHtml = true;  // Enable HTML formatting
+
+    // Configure the SMTP client using connection manager settings
+    SmtpClient smtpClient = new SmtpClient(smtpServer);
+    smtpClient.UseDefaultCredentials = true;  // Use credentials from the connection manager
+    smtpClient.Send(mail);
+
+    Dts.TaskResult = (int)ScriptResults.Success;
+}
